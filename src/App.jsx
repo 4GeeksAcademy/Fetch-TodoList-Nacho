@@ -7,12 +7,13 @@ function App() {
   const [text  , settext] = useState("")
   const [task, setTask] = useState([])
   const [show, setShow] = useState(false)
-  
-  const fetchTasks = () => {
-    fetch('https://playground.4geeks.com/todo/users/Nacho')
+  // el problema es que la api borra mi usuario al cierto tiempo cosa que deberia avisar el ejercicio
+  const fetchTasks = async () => {
+    await fetch('https://playground.4geeks.com/todo/users/Nacho')
       .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+        if (!response.ok) { 
+          
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
         return response.json();
       })
@@ -25,8 +26,41 @@ function App() {
       });
   }
   useEffect(() => {
-  fetchTasks()
-  }, [])
+    const createUser = async () => {
+      try {
+        // Verificar si el usuario existe con GET
+        let response = await fetch("https://playground.4geeks.com/todo/users/Nacho");
+
+        if (!response.ok) {
+          console.warn("Usuario no encontrado, intentando crearlo...");
+
+          // Crear usuario con POST, enviando el cuerpo correcto
+          response = await fetch("https://playground.4geeks.com/todo/users/Nacho", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name: "Nacho" }) // IMPORTANTE: Agregamos un body válido
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          console.log("Usuario creado correctamente");
+        } else {
+          console.log("Usuario ya existe");
+        }
+
+        // Obtener las tareas después de asegurar que el usuario existe
+        await fetchTasks();
+      } catch (error) {
+        console.error("Error creando usuario o obteniendo tareas:", error);
+      }
+    };
+
+    createUser();
+  }, []);
   
 
   const addTask = async (e) => {
@@ -51,7 +85,6 @@ function App() {
       console.log(resp.text()); 
       fetchTasks()
       settext("")
-        return resp.json(); 
     })
     .then(() => {
        
@@ -118,7 +151,7 @@ function App() {
                 return (
                   <ListGroup>
                     <ListGroup.Item
-                      key={index}
+                      key={item.id}
                       onMouseEnter={()=> setShow(item.id)}
                       onMouseLeave={() => setShow(null)}
                       className='border-0 border-bottom border-2 rounded-0'
